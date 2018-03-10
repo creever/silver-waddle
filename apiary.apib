@@ -1,80 +1,552 @@
 FORMAT: 1A
 HOST: http://polls.apiblueprint.org/
 
-# Silver waddle
+# Raise REST API
 
-Polls is a simple API allowing consumers to view polls and vote in them.
+## Important Info
+- Minden http request `Content-type: application/json`-t küld és fogad, kivéve, ha mást írunk lentebb
+- Minden API endpoint standard http headerekkel és http hibakódokkal dolgozik
+- Ha a kliensnek van auth tokene (azaz “be van jelentkezve”), akkor minden további http requesthez csatolnia kell egy `Authorization: Bearer <auth token>` header
 
-## Questions Collection [/questions]
+## Authentication [/auth]
+User accounts have to be created manually using the Artisan CLI.
 
-### List All Questions [GET]
+### Login with email and password [GET /auth/login]
++ Request (application/json)
+
+    + Body
+    
+            {
+                "email": "example@gmail.com",
+                "password": "foo123"
+            }
+            
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "token": "myJwtToken"
+            }
+
+### Change token [POST /auth/token]
+
+Change token
+
++ Request (application/json)
+
+    + Body
+            
+            {
+                "token": "auth token"
+            }
 
 + Response 200 (application/json)
 
-        [
+    + Attribute (Auth)
+
+### Reset password [POST /auth/password/reset]
+
+Elfelejtett jelszavas e-mail kérése. A laraveles beépített jelszócserés megoldást használja.
+
++ Request (application/json)
+
+    + Body
+    
             {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 2048
-                    }, {
-                        "choice": "Python",
-                        "votes": 1024
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 512
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 256
-                    }
-                ]
+                "email": "string"
             }
-        ]
 
-### Create a New Question [POST]
++ Response 200 (application/json)
 
-You may create your own question using this action. It takes a JSON
-object containing a question and a collection of answers in the
-form of choices.
++ Response 404 (application/json)
+
+## User [/user]
+
+### Get a single User [GET /user/:id]
+
+Egy felhasználó adatlapjának lekérdezése.
+
+Az `email` field csak akkor látszik, ha a saját adatlapunkat kérdezzük le.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet lekérdezni.
+
++ Response 200 (application/json)
+
+    + Attribute (User)
+
+### Create a New User [POST]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
 
 + Request (application/json)
 
         {
-            "question": "Favourite programming language?",
-            "choices": [
-                "Swift",
-                "Python",
-                "Objective-C",
-                "Ruby"
-            ]
+            "username"      : "string",
+            "email"         : "string",
+            "password"      : "string",
+            "country"       : "string"
+            "phone_number"  : "string",
+            "address"       : "string",
         }
 
 + Response 201 (application/json)
 
-    + Headers
++ Response 409 (application/json)
 
-            Location: /questions/2
++ Response 422 (application/json)
+
+
+### Edit a user [PUT]
+
+Felhasználó adatlapjának szerkesztése.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet szerkeszteni. És csak a felsorolt mezőket.
+
+Szabályok ugyanazok, `mint a POST /user`-nél.
+
+Ha olyan mezőt szerkesztetnénk, amit nem lehet szerkeszteni, vagy nem létezik a mező, akkor azokat figyelmen kívül hagyja az API. Ha teljesen hiányzik egy mező a requestből, akkor azt is figyelmen kívül hagyja az API.
+
++ Request (application/json)
+
+        {
+            "password"      : "string",
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 200 (application/json)
+
+## Database [/database]
+
+### Get a single Database [GET /database/:id]
+
+Egy felhasználó adatlapjának lekérdezése.
+
+Az `email` field csak akkor látszik, ha a saját adatlapunkat kérdezzük le.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet lekérdezni.
+
++ Response 200 (application/json)
+
+    + Attribute (Database)
+
+### Create a New Database [POST]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
+
++ Request (application/json)
+
+        {
+            "username"      : "string",
+            "email"         : "string",
+            "password"      : "string",
+            "country"       : "string"
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 201 (application/json)
+
++ Response 409 (application/json)
+
++ Response 422 (application/json)
+
+### Edit a Database [PUT /database/{id}]
+
+Felhasználó adatlapjának szerkesztése.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet szerkeszteni. És csak a felsorolt mezőket.
+
+Szabályok ugyanazok, `mint a POST /user`-nél.
+
+Ha olyan mezőt szerkesztetnénk, amit nem lehet szerkeszteni, vagy nem létezik a mező, akkor azokat figyelmen kívül hagyja az API. Ha teljesen hiányzik egy mező a requestből, akkor azt is figyelmen kívül hagyja az API.
+
++ Request (application/json)
+
+        {
+            "password"      : "string",
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 200 (application/json)
+
+### Delete a Database [DELETE /database/{id}]
+
++ Request (application/json)
 
     + Body
-
+    
             {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 0
-                    }, {
-                        "choice": "Python",
-                        "votes": 0
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 0
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 0
-                    }
-                ]
+                
             }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+            
+            }
+
+## Server [/server]
+
+### Get a single Server [GET /server/:id]
+
+Egy felhasználó adatlapjának lekérdezése.
+
+Az `email` field csak akkor látszik, ha a saját adatlapunkat kérdezzük le.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet lekérdezni.
+
++ Response 200 (application/json)
+
+    + Attribute (Server)
+
+### Create a New Server [POST]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
+
++ Request (application/json)
+
+        {
+            "username"      : "string",
+            "email"         : "string",
+            "password"      : "string",
+            "country"       : "string"
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 201 (application/json)
+
++ Response 409 (application/json)
+
++ Response 422 (application/json)
+
+### Edit a Server [PUT /server/{id}]
+
+Felhasználó adatlapjának szerkesztése.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet szerkeszteni. És csak a felsorolt mezőket.
+
+Szabályok ugyanazok, `mint a POST /user`-nél.
+
+Ha olyan mezőt szerkesztetnénk, amit nem lehet szerkeszteni, vagy nem létezik a mező, akkor azokat figyelmen kívül hagyja az API. Ha teljesen hiányzik egy mező a requestből, akkor azt is figyelmen kívül hagyja az API.
+
++ Request (application/json)
+
+        {
+            "password"      : "string",
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 200 (application/json)
+
+### Delete a Server [DELETE /server/{id}]
+
++ Request (application/json)
+
+    + Body
+    
+            {
+                
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+            
+            }
+
+## Event [/database/{database_id}/event]
+
+### Create a New Event [POST /database/{database_id}/event]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
+
++ Request (application/json)
+
+        {
+            "username"      : "string",
+            "email"         : "string",
+            "password"      : "string",
+            "country"       : "string"
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 201 (application/json)
+
++ Response 409 (application/json)
+
++ Response 422 (application/json)
+
+### Edit an Event [PUT /database/{database_id}/event/{id}]
+
+Felhasználó adatlapjának szerkesztése.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet szerkeszteni. És csak a felsorolt mezőket.
+
+Szabályok ugyanazok, `mint a POST /user`-nél.
+
+Ha olyan mezőt szerkesztetnénk, amit nem lehet szerkeszteni, vagy nem létezik a mező, akkor azokat figyelmen kívül hagyja az API. Ha teljesen hiányzik egy mező a requestből, akkor azt is figyelmen kívül hagyja az API.
+
++ Request (application/json)
+
+        {
+            "password"      : "string",
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 200 (application/json)
+
+### Delete an Event [DELETE /database/{database_id}/event/{id}]
+
++ Request (application/json)
+
+    + Body
+    
+            {
+                
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+            
+            }
+
+## Database User [/database/{database_id}/user]
+
+### Create a New User [POST /database/{database_id}/user]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
+
++ Request (application/json)
+
+        {
+            "username"      : "string",
+            "email"         : "string",
+            "password"      : "string",
+            "country"       : "string"
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 201 (application/json)
+
++ Response 409 (application/json)
+
++ Response 422 (application/json)
+
+### Merge two user [PUT /database/{database_id}/user/{id}/merge_into/{target_user_id}]
+
+Felhasználó adatlapjának szerkesztése.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet szerkeszteni. És csak a felsorolt mezőket.
+
+Szabályok ugyanazok, `mint a POST /user`-nél.
+
+Ha olyan mezőt szerkesztetnénk, amit nem lehet szerkeszteni, vagy nem létezik a mező, akkor azokat figyelmen kívül hagyja az API. Ha teljesen hiányzik egy mező a requestből, akkor azt is figyelmen kívül hagyja az API.
+
++ Request (application/json)
+
+        {
+            "password"      : "string",
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 200 (application/json)
+
+### Delete a User [DELETE /database/{database_id}/user/{id}]
+
++ Request (application/json)
+
+    + Body
+    
+            {
+                
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+            
+            }
+
+## Item [/database/{database_id}/item]
+
+### Create a New Item [POST /database/{database_id}/item]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
+
++ Request (application/json)
+
+        {
+            "username"      : "string",
+            "email"         : "string",
+            "password"      : "string",
+            "country"       : "string"
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 201 (application/json)
+
++ Response 409 (application/json)
+
++ Response 422 (application/json)
+
+### Edit a Item [PUT /database/{database_id}/item/{id}]
+
+Felhasználó adatlapjának szerkesztése.
+
+Csak bejelentkezve, és csak a saját adatlapunkat lehet szerkeszteni. És csak a felsorolt mezőket.
+
+Szabályok ugyanazok, `mint a POST /user`-nél.
+
+Ha olyan mezőt szerkesztetnénk, amit nem lehet szerkeszteni, vagy nem létezik a mező, akkor azokat figyelmen kívül hagyja az API. Ha teljesen hiányzik egy mező a requestből, akkor azt is figyelmen kívül hagyja az API.
+
++ Request (application/json)
+
+        {
+            "password"      : "string",
+            "phone_number"  : "string",
+            "address"       : "string",
+        }
+
++ Response 200 (application/json)
+
+### Delete a Item [DELETE /database/{database_id}/item/{id}]
+
++ Request (application/json)
+
+    + Body
+    
+            {
+                
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+            
+            }
+
+## Prediction [/database/{database_id}/prediction]
+
+### Query result [GET /database/{database_id}/prediction]
+
+Új felhasználó létrehozása (regisztráció)
+
+- username: kötelező, csak kisbetű-nagybetű-szám-pont, min 3 karakter, max 255 karakter, egyedi a rendszerben
+- email: kötelező, egyedi
+- password: kötelező, min. 6 karakter
+- country: az eszköz nyelve
+- phone_number:  min 3 karakter, max 255 karakter
+- address:  min 3 karakter, max 255 karakter, nem kell validálni a cím helyességét semmilyen módon mert szabadszavas
+
++ Response 200 (application/json)
+
+# Data Structures
+
+## Auth (object)
+
+### Properties
+
++ token: `auth token` (string)
+
+## User (object)
+
++ id: `0` (number)
++ username: `k.belane12` (string)
++ email: `foo@example.com` (string)
++ phone_number: `+12345789` (string)
++ address: `1036 Budapest, Perc utca 6.` (string)
++ created_at: `0000-00-00 00:00:00` (string)
++ updated_at: `0000-00-00 00:00:00` (string)
++ deleted_at: `0000-00-00 00:00:00` (string)
+
+## Database (object)
+
++ id: `0` (number)
++ name: `Raise Products` (string)
++ created_at: `0000-00-00 00:00:00` (string)
++ updated_at: `0000-00-00 00:00:00` (string)
+
+## Server (object)
+
++ id: `0` (number)
++ name: `Raise Server 01` (string)
++ created_at: `0000-00-00 00:00:00` (string)
++ updated_at: `0000-00-00 00:00:00` (string)
+
+## Pager
+
++ total: 4 (number)
++ per_page: 15 (number)
++ current_page: 1 (number)
++ last_page: 1 (number)
++ from: 1 (number)
++ to: 2 (number)
+
+## StoryboardFolder (object)
++ id: 12 (number)
++ title: `My Folder` (string)
++ folder: null
++ created_at: `2017-03-12 12:12:12` (string)
